@@ -1,4 +1,4 @@
-namespace identity_user_server
+namespace IdentityUserManagement.API
 {
     public class WeatherForecast
     {

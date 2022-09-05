@@ -1,6 +1,4 @@
-﻿namespace identity_user_server
-{
-    public class README
-    {
-    }
-}
+﻿# Idendity User Server
+
+Web Api to manager Identity Users, done for learning and practice purpose.
+
