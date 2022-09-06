@@ -9,6 +9,7 @@ namespace IdentityUserManagement.API.Configurations
         public AutoMapperConfig()
         {
             CreateMap<ApiUser, UserDto>().ReverseMap();
+            CreateMap<ApiUser, RegisterUserDto>().ReverseMap();
         }
     }
 

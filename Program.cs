@@ -1,6 +1,10 @@
 using IdentityUserManagement.API.Configurations;
+using IdentityUserManagement.API.Contracts;
 using IdentityUserManagement.API.Data;
+using IdentityUserManagement.API.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +15,12 @@ builder.Services.AddDbContext<IdentityDBContext>(options => {
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 });
 
+builder.Services.AddIdentityCore<ApiUser>()
+    .AddRoles<IdentityRole>()
+    //.AddTokenProvider<DataProtectorTokenProvider<ApiUser>>("IdentityUserManagerApi") // MUST be the same as content of variable _loginProvider of class AuthManager
+    .AddEntityFrameworkStores<IdentityDBContext>();
+    //.AddDefaultTokenProviders();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -20,7 +30,13 @@ builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll", b => b.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod());
 });
 
+builder.Host.UseSerilog((ctx, lc) =>
+{
+    lc.WriteTo.Console().ReadFrom.Configuration(ctx.Configuration);
+});
+
 builder.Services.AddAutoMapper(typeof(AutoMapperConfig));
+builder.Services.AddScoped<IIdentityUserManagerRepository, IdentityUserManagerRepository>();
 
 var app = builder.Build();
 

@@ -1,7 +1,6 @@
 ﻿using IdentityUserManagement.API.Data.Configuration;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace IdentityUserManagement.API.Data
 {

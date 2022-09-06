@@ -4,6 +4,8 @@
 
 # Logs
 Logs/
+log/
+
 
 # Generated files
 project.lock.json
