@@ -10,6 +10,7 @@ namespace IdentityUserManagement.API.Contracts
         IEnumerable<UserDto> GetUsers();
         IEnumerable<RoleDto> GetRoles();
         Task<IEnumerable<IdentityError>> AddRoleAsync(RoleDto createRoleDto);
+        Task<IEnumerable<IdentityError>> DeleteRoleAsync(string roleName);
     }
 }
 

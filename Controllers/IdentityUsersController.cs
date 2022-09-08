@@ -85,5 +85,28 @@ namespace IdentityUserManagement.API.Controllers
                 return Problem($"Something Went Wrong in the {nameof(PostRole)}. Please contact support.", statusCode: 500);
             }
         }
+
+        [HttpDelete("roles/{roleName}")]
+        public async Task<ActionResult<RoleDto>> DeleteRole(string roleName)
+        {
+            try
+            {
+                var errors = await _identityUsersManager.DeleteRoleAsync(roleName);
+                if (errors.Any())
+                {
+                    foreach (var error in errors)
+                    {
+                        ModelState.AddModelError(error.Code, error.Description);
+                    }
+                    return BadRequest(ModelState);
+                }
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Something Went Wrong in the {nameof(PostRole)} - Role Deletion attempt for {roleName}");
+                return Problem($"Something Went Wrong in the {nameof(PostRole)}. Please contact support.", statusCode: 500);
+            }
+        }
     }
 }

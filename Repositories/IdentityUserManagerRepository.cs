@@ -62,6 +62,22 @@ namespace IdentityUserManagement.API.Repositories
             return result.Errors;
         }
 
+        public async Task<IEnumerable<IdentityError>> DeleteRoleAsync(string roleName)
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
+            if (role == null)
+            {
+                var identityResult = IdentityResult.Failed( 
+                    new IdentityError[] { new IdentityError() { Code = "Not Found", Description = $"Role name [{roleName}] not found" } }
+                    );
+                return identityResult.Errors;
+            }
+
+            var result = await _roleManager.DeleteAsync(role);
+
+            return result.Errors;
+        }
+
         private async Task<IdentityResult> RegisterUser(RegisterUserDto userDto)
         {
             _apiUser = _mapper.Map<ApiUser>(userDto);
