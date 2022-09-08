@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using IdentityUserManagement.API.Data;
 using IdentityUserManagement.API.Models.IdentityUsers;
+using Microsoft.AspNetCore.Identity;
 
 namespace IdentityUserManagement.API.Configurations
 {
@@ -10,6 +11,7 @@ namespace IdentityUserManagement.API.Configurations
         {
             CreateMap<ApiUser, UserDto>().ReverseMap();
             CreateMap<ApiUser, RegisterUserDto>().ReverseMap();
+            CreateMap<RoleDto, IdentityRole>().ReverseMap();
         }
     }
 

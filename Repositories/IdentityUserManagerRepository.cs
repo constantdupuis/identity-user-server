@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using IdentityUserManagement.API.Configurations;
 using IdentityUserManagement.API.Contracts;
 using IdentityUserManagement.API.Data;
 using IdentityUserManagement.API.Models.IdentityUsers;
@@ -10,12 +11,14 @@ namespace IdentityUserManagement.API.Repositories
     {
         private readonly IMapper _mapper;
         private readonly UserManager<ApiUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private ApiUser _apiUser;
 
-        public IdentityUserManagerRepository(IMapper mapper, UserManager<ApiUser> userManager)
+        public IdentityUserManagerRepository(IMapper mapper, UserManager<ApiUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _mapper = mapper;
             _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         public IEnumerable<UserDto> GetUsers()
@@ -42,6 +45,23 @@ namespace IdentityUserManagement.API.Repositories
             return result.Errors;
         }
 
+        public IEnumerable<RoleDto> GetRoles()
+        {
+            return _mapper.Map<IEnumerable<RoleDto>>(_roleManager.Roles);
+        }
+
+        public async Task<IEnumerable<IdentityError>> AddRoleAsync(RoleDto createRoleDto)
+        {
+            if (string.IsNullOrEmpty(createRoleDto.NormalizedName))
+            {
+                createRoleDto.NormalizedName = createRoleDto.Name.ToUpper();
+            }
+
+            var identityRole = _mapper.Map<IdentityRole>(createRoleDto);
+            var result = await _roleManager.CreateAsync(identityRole);
+            return result.Errors;
+        }
+
         private async Task<IdentityResult> RegisterUser(RegisterUserDto userDto)
         {
             _apiUser = _mapper.Map<ApiUser>(userDto);
@@ -50,7 +70,7 @@ namespace IdentityUserManagement.API.Repositories
 
             if (result.Succeeded)
             {
-                var resultAddToRole = await _userManager.AddToRoleAsync(_apiUser, "User");
+                var resultAddToRole = await _userManager.AddToRoleAsync(_apiUser, BaseRoleNames.User);
                 return resultAddToRole;
             }
 
@@ -59,8 +79,10 @@ namespace IdentityUserManagement.API.Repositories
 
         private async Task<IdentityResult> EnrollHasAdmin()
         {
-            var resultAddToRole = await _userManager.AddToRoleAsync(_apiUser, "Administrator");
+            var resultAddToRole = await _userManager.AddToRoleAsync(_apiUser, BaseRoleNames.Administrator);
             return resultAddToRole;
         }
+
+        
     }
 }

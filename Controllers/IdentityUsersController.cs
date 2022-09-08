@@ -29,7 +29,7 @@ namespace IdentityUserManagement.API.Controllers
             _identityUsersManager = identityUsersManager;
         }
 
-        [HttpGet]
+        [HttpGet("users")]
         public ActionResult<IEnumerable<UserDto>> GetUsers() {
             return Ok(_identityUsersManager.GetUsers());
         }
@@ -55,6 +55,34 @@ namespace IdentityUserManagement.API.Controllers
             {
                 _logger.LogError(ex, $"Something Went Wrong in the {nameof(RegisterUser)} - User Registration attempt for {registerUserDto.Email}");
                 return Problem($"Something Went Wrong in the {nameof(RegisterUser)}. Please contact support.", statusCode: 500);
+            }
+        }
+
+        [HttpGet("roles")]
+        public ActionResult<IEnumerable<RoleDto>> GetRoles() {
+            return Ok(_identityUsersManager.GetRoles());
+        }
+
+        [HttpPost("roles")]
+        public async Task<ActionResult<RoleDto>> PostRole([FromBody] RoleDto createRoleDto)
+        {
+            try
+            {
+                var errors = await _identityUsersManager.AddRoleAsync(createRoleDto);
+                if (errors.Any())
+                {
+                    foreach (var error in errors)
+                    {
+                        ModelState.AddModelError(error.Code, error.Description);
+                    }
+                    return BadRequest(ModelState);
+                }
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Something Went Wrong in the {nameof(PostRole)} - Role Creation attempt for {createRoleDto.Name}");
+                return Problem($"Something Went Wrong in the {nameof(PostRole)}. Please contact support.", statusCode: 500);
             }
         }
     }
