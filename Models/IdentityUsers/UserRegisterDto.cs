@@ -2,7 +2,7 @@
 
 namespace IdentityUserManagement.API.Models.IdentityUsers
 {
-    public class RegisterUserDto : LoginUserDto
+    public class UserRegisterDto : UserLoginDto
     {
         [Required]
         public string FirstName { get; set; }

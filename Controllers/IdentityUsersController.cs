@@ -35,7 +35,7 @@ namespace IdentityUserManagement.API.Controllers
         }
 
         [HttpPost("registerUser")]
-        public async Task<ActionResult> RegisterUser([FromBody] RegisterUserDto registerUserDto)
+        public async Task<ActionResult> RegisterUser([FromBody] UserRegisterDto registerUserDto)
         {
             _logger.LogInformation($"Registration Attempt for {registerUserDto.Email}");
             var errors = await _identityUsersManager.Register(registerUserDto);

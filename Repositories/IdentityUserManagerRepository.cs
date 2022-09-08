@@ -26,13 +26,13 @@ namespace IdentityUserManagement.API.Repositories
             return _mapper.Map<IEnumerable<UserDto>>(_userManager.Users);
         }
 
-        public async Task<IEnumerable<IdentityError>> Register(RegisterUserDto userDto)
+        public async Task<IEnumerable<IdentityError>> Register(UserRegisterDto userDto)
         {
             var result =  await RegisterUser(userDto);
             return result.Errors;
         }
 
-        public async Task<IEnumerable<IdentityError>> RegisterAdmin(RegisterUserDto userDto)
+        public async Task<IEnumerable<IdentityError>> RegisterAdmin(UserRegisterDto userDto)
         {
             var result = await RegisterUser(userDto);
 
@@ -78,7 +78,7 @@ namespace IdentityUserManagement.API.Repositories
             return result.Errors;
         }
 
-        private async Task<IdentityResult> RegisterUser(RegisterUserDto userDto)
+        private async Task<IdentityResult> RegisterUser(UserRegisterDto userDto)
         {
             _apiUser = _mapper.Map<ApiUser>(userDto);
             _apiUser.UserName = _apiUser.Email;

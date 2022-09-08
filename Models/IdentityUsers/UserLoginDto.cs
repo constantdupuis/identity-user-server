@@ -2,7 +2,7 @@
 
 namespace IdentityUserManagement.API.Models.IdentityUsers
 {
-    public class LoginUserDto
+    public class UserLoginDto
     {
         [Required]
         [EmailAddress]
