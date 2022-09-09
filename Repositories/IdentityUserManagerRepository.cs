@@ -4,6 +4,10 @@ using IdentityUserManagement.API.Contracts;
 using IdentityUserManagement.API.Data;
 using IdentityUserManagement.API.Models.IdentityUsers;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace IdentityUserManagement.API.Repositories
 {
@@ -13,14 +17,21 @@ namespace IdentityUserManagement.API.Repositories
         private readonly IMapper _mapper;
         private readonly UserManager<ApiUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IConfiguration _configuration;
         private ApiUser _apiUser;
 
-        public IdentityUserManagerRepository(ILogger<IdentityUserManagerRepository> logger, IMapper mapper, UserManager<ApiUser> userManager, RoleManager<IdentityRole> roleManager)
+        public IdentityUserManagerRepository(
+            ILogger<IdentityUserManagerRepository> logger, 
+            IMapper mapper, 
+            UserManager<ApiUser> userManager, 
+            RoleManager<IdentityRole> roleManager,
+            IConfiguration configuration)
         {
             _logger = logger;
             _mapper = mapper;
             _userManager = userManager;
             _roleManager = roleManager;
+            _configuration = configuration;
         }
 
         public IEnumerable<UserDto> GetUsers()
@@ -47,6 +58,27 @@ namespace IdentityUserManagement.API.Repositories
             }
 
             return result.Errors;
+        }
+
+        public async Task<AuthResponseDto> Login(UserLoginDto loginDto)
+        {
+            _logger.LogInformation($"Looking for user with email {loginDto.Email}.");
+            _apiUser = await _userManager.FindByEmailAsync(loginDto.Email);
+            bool isValidUser = await _userManager.CheckPasswordAsync(_apiUser, loginDto.Password);
+
+            if (_apiUser == null || isValidUser == false)
+            {
+                _logger.LogWarning($"User with email {_apiUser.Email} was not found.");
+                return null;
+            }
+            var token = await GenerateToken();
+            _logger.LogInformation($"Token generated for user with email {loginDto.Email} | Token : [{token}].");
+            return new AuthResponseDto
+            {
+                Token = token,
+                UserID = _apiUser.Id,
+                RefreshToken = await CreateRefreshToken()
+            };
         }
 
         public async Task<IEnumerable<IdentityError>> UpdateUserAsync(UserDto userDto)
@@ -179,6 +211,49 @@ namespace IdentityUserManagement.API.Repositories
             return role != null;
         }
 
-       
+        private async Task<string> GenerateToken()
+        {
+            var securityKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"])
+                );
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var roles = await _userManager.GetRolesAsync(_apiUser);
+            var roleClaims = roles.Select(x => new Claim(ClaimTypes.Role, x)).ToList();
+            var userClaims = await _userManager.GetClaimsAsync(_apiUser);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, _apiUser.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, _apiUser.Email),
+                new Claim("uid", _apiUser.Id), // own claim
+
+            }.Union(userClaims).Union(roleClaims);
+
+            // TODO check that all parameters are available from configuration file
+
+            _logger.LogInformation("Token duration {0}min", _configuration["JwtSettings:DurationInMinutes"]);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JwtSettings:Issuer"],
+                audience: _configuration["JwtSettings:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(
+                    Convert.ToInt32(_configuration["JwtSettings:DurationInMinutes"])
+                    ),
+                signingCredentials: credentials
+                );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public async Task<string> CreateRefreshToken()
+        {
+            await _userManager.RemoveAuthenticationTokenAsync(_apiUser, AppJwtConstants.LoginProvider, AppJwtConstants.RefreshToken);
+            var newRefreshToken = await _userManager.GenerateUserTokenAsync(_apiUser, AppJwtConstants.LoginProvider, AppJwtConstants.RefreshToken);
+            var resutl = await _userManager.SetAuthenticationTokenAsync(_apiUser, AppJwtConstants.LoginProvider, AppJwtConstants.RefreshToken, newRefreshToken);
+            return newRefreshToken;
+        }
     }
 }

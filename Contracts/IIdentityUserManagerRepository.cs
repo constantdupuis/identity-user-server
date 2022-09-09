@@ -8,6 +8,8 @@ namespace IdentityUserManagement.API.Contracts
     {
         Task<IEnumerable<IdentityError>> Register(UserRegisterDto userDto);
         Task<IEnumerable<IdentityError>> RegisterAdmin(UserRegisterDto userDto);
+
+        Task<AuthResponseDto> Login(UserLoginDto loginDot);
         IEnumerable<UserDto> GetUsers();
         IEnumerable<RoleDto> GetRoles();
         Task<IEnumerable<IdentityError>> UpdateUserAsync( UserDto userDto);

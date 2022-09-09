@@ -2,10 +2,12 @@
 using IdentityUserManagement.API.Contracts;
 using IdentityUserManagement.API.Data;
 using IdentityUserManagement.API.Models.IdentityUsers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
+using System.Data;
 
 namespace IdentityUserManagement.API.Controllers
 {
@@ -31,11 +33,13 @@ namespace IdentityUserManagement.API.Controllers
         }
 
         [HttpGet("users")]
+        [Authorize(Roles = "Administrator")]
         public ActionResult<IEnumerable<UserDto>> GetUsers() {
             return Ok(_identityUsersManager.GetUsers());
         }
 
         [HttpPost("users/register")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> RegisterUser([FromBody] UserRegisterDto registerUserDto)
         {
             _logger.LogInformation($"Registration attempt for {registerUserDto.Email}");
@@ -60,6 +64,7 @@ namespace IdentityUserManagement.API.Controllers
         }
 
         [HttpPost("users/registerAdmin")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> RegisterAdmin([FromBody] UserRegisterDto registerUserDto)
         {
             _logger.LogInformation($"Administrator registration attempt for {registerUserDto.Email}");
@@ -84,7 +89,29 @@ namespace IdentityUserManagement.API.Controllers
             }
         }
 
+        // POST : api/account/login
+        [HttpPost("users/login")]
+        public async Task<ActionResult> Login([FromBody] UserLoginDto loginDto)
+        {
+            _logger.LogInformation($"Login Attempt for {loginDto.Email}");
+            try
+            {
+                var authResponse = await _identityUsersManager.Login(loginDto);
+            if (authResponse == null)
+            {
+                return Unauthorized();
+            }
+            return Ok(authResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Something Went Wrong in the {nameof(Login)} - User Login attempt for {loginDto.Email}");
+                return Problem($"Something Went Wrong in the {nameof(Login)}. Please contact support.", statusCode: 500);
+            }
+        }
+
         [HttpDelete("users/{userEmail}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> DeleteUser(string userEmail)
         {
             _logger.LogInformation($"Delete user attempt for {userEmail}");
@@ -110,6 +137,7 @@ namespace IdentityUserManagement.API.Controllers
         }
 
         [HttpPut("users/{email}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> UpdateUser(string email, [FromBody] UserDto userDto)
         {
             if (email != userDto.Email)
@@ -144,11 +172,13 @@ namespace IdentityUserManagement.API.Controllers
         
 
         [HttpGet("roles")]
+        [Authorize(Roles = "Administrator")]
         public ActionResult<IEnumerable<RoleDto>> GetRoles() {
             return Ok(_identityUsersManager.GetRoles());
         }
 
         [HttpPost("roles")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<RoleDto>> PostRole([FromBody] RoleDto createRoleDto)
         {
             try
@@ -172,6 +202,7 @@ namespace IdentityUserManagement.API.Controllers
         }
 
         [HttpDelete("roles/{roleName}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<RoleDto>> DeleteRole(string roleName)
         {
             try
@@ -195,6 +226,7 @@ namespace IdentityUserManagement.API.Controllers
         }
 
         [HttpPut("roles/{roleName}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<RoleUpdateDto>> UpdateRole(string roleName, [FromBody] RoleUpdateDto roleUpdate)
         {
             if (roleName != roleUpdate.CurrentRoleName)
