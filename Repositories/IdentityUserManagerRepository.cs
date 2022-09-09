@@ -9,13 +9,15 @@ namespace IdentityUserManagement.API.Repositories
 {
     public class IdentityUserManagerRepository : IIdentityUserManagerRepository
     {
+        private readonly ILogger<IdentityUserManagerRepository> _logger;
         private readonly IMapper _mapper;
         private readonly UserManager<ApiUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private ApiUser _apiUser;
 
-        public IdentityUserManagerRepository(IMapper mapper, UserManager<ApiUser> userManager, RoleManager<IdentityRole> roleManager)
+        public IdentityUserManagerRepository(ILogger<IdentityUserManagerRepository> logger, IMapper mapper, UserManager<ApiUser> userManager, RoleManager<IdentityRole> roleManager)
         {
+            _logger = logger;
             _mapper = mapper;
             _userManager = userManager;
             _roleManager = roleManager;
@@ -28,12 +30,14 @@ namespace IdentityUserManagement.API.Repositories
 
         public async Task<IEnumerable<IdentityError>> Register(UserRegisterDto userDto)
         {
+            _logger.LogInformation($"Attempt to register a user with email ${userDto.Email}");
             var result =  await RegisterUser(userDto);
             return result.Errors;
         }
 
         public async Task<IEnumerable<IdentityError>> RegisterAdmin(UserRegisterDto userDto)
         {
+            _logger.LogInformation($"Attempt to register an administrator user with email ${userDto.Email}");
             var result = await RegisterUser(userDto);
 
             if (result.Succeeded)
@@ -42,6 +46,50 @@ namespace IdentityUserManagement.API.Repositories
                 return resultAddToRole.Errors;
             }
 
+            return result.Errors;
+        }
+
+        public async Task<IEnumerable<IdentityError>> UpdateUserAsync(UserDto userDto)
+        {
+            _logger.LogInformation($"Attempt to update user with email ${userDto.Email}");
+            
+            var user = await _userManager.FindByEmailAsync(userDto.Email);
+
+            if (user == null)
+            {
+                var identityResult = IdentityResult.Failed(
+                    new IdentityError[] { new IdentityError() { Code = "Not Found", Description = $"Email name [{userDto.Email}] not found" } }
+                    );
+                return identityResult.Errors;
+            }
+
+            _mapper.Map(userDto, user);
+
+            var result = await _userManager.UpdateAsync(user);
+            return result.Errors;
+        }
+
+        public async Task<IEnumerable<IdentityError>> DeleteUserAsync(UserDto userDto)
+        {
+            _logger.LogInformation($"Attempt to delete user with email ${userDto.Email}");
+            var user = _mapper.Map<ApiUser>(userDto);
+            var result = await _userManager.DeleteAsync(user);
+            return result.Errors;
+        }
+
+        public async Task<IEnumerable<IdentityError>> DeleteUserAsync(string email)
+        {
+            _logger.LogInformation($"Attempt to delete user with email ${email}");
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                var identityResult = IdentityResult.Failed(
+                    new IdentityError[] { new IdentityError() { Code = "Not Found", Description = $"Email name [{email}] not found" } }
+                    );
+                return identityResult.Errors;
+            }
+
+            var result = await _userManager.DeleteAsync(user);
             return result.Errors;
         }
 
@@ -78,6 +126,29 @@ namespace IdentityUserManagement.API.Repositories
             return result.Errors;
         }
 
+        public async Task<IEnumerable<IdentityError>> UpdateRoleAsync( RoleUpdateDto roleUpdate)
+        {
+            var role = await _roleManager.FindByNameAsync(roleUpdate.CurrentRoleName);
+            if (role == null)
+            {
+                var identityResult = IdentityResult.Failed(
+                    new IdentityError[] { new IdentityError() { Code = "Not Found", Description = $"Role name [{roleUpdate.CurrentRoleName}] not found" } }
+                    );
+                return identityResult.Errors;
+            }
+
+            role.Name = roleUpdate.NewRoleName;
+            if (string.IsNullOrEmpty(roleUpdate.NewRoleNormalizedName))
+            {
+                roleUpdate.NewRoleNormalizedName = roleUpdate.NewRoleName.ToUpper();
+            }
+            role.NormalizedName = roleUpdate.NewRoleNormalizedName;
+
+            var result = await _roleManager.UpdateAsync(role);
+
+            return result.Errors;
+        }
+
         private async Task<IdentityResult> RegisterUser(UserRegisterDto userDto)
         {
             _apiUser = _mapper.Map<ApiUser>(userDto);
@@ -98,7 +169,16 @@ namespace IdentityUserManagement.API.Repositories
             var resultAddToRole = await _userManager.AddToRoleAsync(_apiUser, BaseRoleNames.Administrator);
             return resultAddToRole;
         }
+        public Task<bool> UserExists(string userEMail)
+        {
+            throw new NotImplementedException();
+        }
+        public async Task<bool> RoleExists(string roleName)
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
+            return role != null;
+        }
 
-        
+       
     }
 }
