@@ -255,5 +255,10 @@ namespace IdentityUserManagement.API.Repositories
             var resutl = await _userManager.SetAuthenticationTokenAsync(_apiUser, AppJwtConstants.LoginProvider, AppJwtConstants.RefreshToken, newRefreshToken);
             return newRefreshToken;
         }
+
+        public string PasswordHasher(string tohash)
+        {
+            return _userManager.PasswordHasher.HashPassword(tohash);
+        }
     }
 }

@@ -89,10 +89,10 @@ builder.Services.AddAuthentication(options => {
 
 builder.Services.AddControllers();
 
-
 var app = builder.Build();
 
 CheckMandatoryConfiguration(app);
+EnsureAdminUserIsPresent(app);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -130,4 +130,10 @@ void CheckMandatoryConfiguration( WebApplication app)
             throw new Exception($"No [{param}] provided in settings.");
         }
     }
+}
+
+
+void EnsureAdminUserIsPresent(WebApplication app)
+{
+    // TODO : Get inspiration from https://docs.microsoft.com/en-us/aspnet/core/security/authorization/secure-data?view=aspnetcore-6.0#configure-the-test-account
 }

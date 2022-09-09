@@ -20,6 +20,7 @@ namespace IdentityUserManagement.API.Contracts
         Task<IEnumerable<IdentityError>> UpdateRoleAsync(RoleUpdateDto roleUpdate);
         Task<bool> UserExists(string userEMail);
         Task<bool> RoleExists(string roleName);
+        string PasswordHasher(string tohash);
     }
 }
 
